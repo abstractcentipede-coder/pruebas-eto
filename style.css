@@ -1,0 +1,977 @@
+/* ==========================================================================
+   ESTILOS CRÍPTICOS EN BLANCO Y NEGRO (TERMINAL GUI)
+   Optimizado para dispositivos móviles, tablets y pantallas de escritorio.
+   ========================================================================== */
+
+/* 1. RESET Y CONFIGURACIÓN BASE */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Courier New', Courier, monospace;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root {
+  --bg-color: #030303;
+  --surface-color: #0c0c0c;
+  --border-color: #ffffff;
+  --text-main: #ffffff;
+  --text-dim: #7d7d7d;
+  --text-error: #ffffff;
+  --highlight-bg: #ffffff;
+  --highlight-text: #000000;
+  --grid-line: rgba(255, 255, 255, 0.08);
+}
+
+html, body {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  overflow-x: hidden;
+  position: relative;
+  user-select: none;
+}
+
+/* 2. CAPAS DE FONDO: CANVASES, ANIMACIONES Y SCANLINES */
+
+/* Canvas de animación ASCII de Tréboles */
+#clover-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.28;
+}
+
+/* Capa para fondo personalizado */
+.custom-bg-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: grayscale(100%) contrast(140%) brightness(0.6);
+}
+
+/* Efecto monitor CRT (Líneas de escaneo) */
+.crt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.4) 50%
+  ), linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.02),
+    rgba(0, 255, 0, 0.01),
+    rgba(0, 0, 255, 0.02)
+  );
+  background-size: 100% 3px, 6px 100%;
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* Viñeta oscura en los bordes */
+.vignette {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.85);
+  pointer-events: none;
+  z-index: 998;
+}
+
+/* 3. ESPACIO DE TRABAJO PRINCIPAL */
+.terminal-workspace {
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  transition: transform 0.6s ease, filter 0.6s ease, opacity 0.6s ease;
+}
+
+/* Animación de apagado de TV vieja (CRT Shutdown) */
+.crt-powering-down {
+  animation: tvShutdownEffect 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+@keyframes tvShutdownEffect {
+  0% {
+    transform: scale(1, 1);
+    filter: brightness(1);
+    opacity: 1;
+  }
+  45% {
+    transform: scale(1, 0.005);
+    filter: brightness(5);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(0.005, 0.005);
+    filter: brightness(12);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0, 0);
+    filter: brightness(0);
+    opacity: 0;
+  }
+}
+
+/* 4. ENCABEZADO Y CONTROLES */
+.main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 0.8rem;
+  background-color: rgba(5, 5, 5, 0.85);
+  backdrop-filter: blur(2px);
+}
+
+.system-tag {
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  color: var(--text-main);
+  font-weight: bold;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Botón de Audio / Música */
+.audio-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  padding: 6px 12px;
+  letter-spacing: 1px;
+}
+
+.audio-btn.playing {
+  background-color: #ffffff;
+  color: #000000;
+  font-weight: bold;
+}
+
+.audio-icon {
+  font-size: 0.9rem;
+}
+
+/* Estado de la aplicación */
+.system-status {
+  font-size: 0.78rem;
+  letter-spacing: 1.5px;
+  border: 1px solid var(--border-color);
+  padding: 5px 12px;
+  background: #000000;
+  display: inline-flex;
+  align-items: center;
+}
+
+.status-indicator {
+  display: inline-block;
+  margin-right: 6px;
+  color: #ffffff;
+}
+
+.blink {
+  animation: blinkAnim 1s infinite steps(2, start);
+}
+
+@keyframes blinkAnim {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* 5. BLOQUE CENTRAL DE ACCESO / LOGIN */
+.access-centerpiece {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: auto;
+  width: 100%;
+  max-width: 580px;
+  padding: 1.5rem 0.5rem;
+  transition: all 0.4s ease-in-out;
+}
+
+.terminal-frame {
+  width: 100%;
+  background-color: var(--surface-color);
+  border: 2px solid var(--border-color);
+  box-shadow: 0 0 0 3px #000, 0 0 0 5px var(--border-color), 0 15px 35px rgba(0, 0, 0, 0.95);
+  position: relative;
+}
+
+.frame-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--border-color);
+  color: #000000;
+  padding: 5px 10px;
+  font-weight: bold;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+}
+
+.frame-dot {
+  width: 8px;
+  height: 8px;
+  background: #000;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.frame-body {
+  padding: 2rem 1.4rem;
+  text-align: center;
+}
+
+.access-title {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: clamp(2rem, 7vw, 3.2rem);
+  letter-spacing: clamp(4px, 2.5vw, 12px);
+  margin-bottom: 0.5rem;
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: 900;
+  border-bottom: 2px dashed var(--border-color);
+  padding-bottom: 0.5rem;
+  word-break: break-word;
+  text-shadow: 2px 2px 0px #000, -2px -2px 0px rgba(255, 255, 255, 0.2);
+}
+
+.access-instruction {
+  font-size: clamp(0.72rem, 2.2vw, 0.82rem);
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 1.5rem;
+  line-height: 1.4;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  border: 2px solid var(--border-color);
+  background: #000000;
+  padding: 4px;
+  position: relative;
+  gap: 4px;
+  box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.1);
+}
+
+.prompt-arrow {
+  font-weight: bold;
+  padding: 0 6px;
+  color: var(--text-main);
+}
+
+#password-input {
+  flex: 1;
+  min-width: 140px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: clamp(1rem, 3.5vw, 1.15rem);
+  letter-spacing: 2px;
+  padding: 8px 4px;
+}
+
+#password-input::placeholder {
+  color: #444444;
+  letter-spacing: 1.5px;
+  font-size: 0.85rem;
+}
+
+/* Botones Crípticos */
+.btn-cryptic {
+  background: #000000;
+  color: #ffffff;
+  border: 1px solid var(--border-color);
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  letter-spacing: 1px;
+  transition: background-color 0.15s, color 0.15s;
+  touch-action: manipulation;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-cryptic:hover {
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+.btn-cryptic:active {
+  background: #ffffff;
+  color: #000000;
+}
+
+.btn-cryptic.alt {
+  border-style: dashed;
+}
+
+.btn-cryptic.danger:hover {
+  background: #ffffff;
+  color: #000000;
+  text-decoration: line-through;
+}
+
+.btn-text {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 0.72rem;
+  margin-top: 0.8rem;
+  letter-spacing: 1px;
+  padding: 4px;
+}
+
+.btn-text:hover {
+  color: var(--text-main);
+  text-decoration: underline;
+}
+
+/* LOGO: CENTRADO EN LA PARTE INFERIOR DEL CUADRO DE CONTRASEÑA */
+.terminal-box-logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 1.6rem;
+  padding-top: 1.2rem;
+  border-top: 1px dotted rgba(255, 255, 255, 0.25);
+  width: 100%;
+}
+
+.terminal-box-logo-container #main-logo {
+  max-width: min(92%, 460px);
+  max-height: 200px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  image-rendering: auto; /* Muestra el PNG con máxima resolución, nitidez y suavidad */
+  filter: none;          /* Sin filtros destructivos que quemen los bordes o texto */
+  display: block;
+  margin: 0 auto;
+}
+
+/* FEEDBACK MESSAGE (Error / Acierto) */
+.feedback-message {
+  min-height: 2.2rem;
+  margin-top: 1.2rem;
+  font-size: 0.88rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  line-height: 1.35;
+  transition: all 0.2s ease;
+}
+
+.feedback-message.error {
+  background-color: #ffffff;
+  color: #000000;
+  border: 2px solid #000000;
+  animation: shakeGlitch 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+.feedback-message.success {
+  background-color: #000000;
+  color: #ffffff;
+  border: 1px solid #ffffff;
+}
+
+@keyframes shakeGlitch {
+  10%, 90% { transform: translate3d(-3px, 0, 0); }
+  20%, 80% { transform: translate3d(4px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+  40%, 60% { transform: translate3d(6px, 0, 0); }
+}
+
+/* 6. PANTALLA COMPLETA CRT SHUTDOWN & MENSAJE DE TV VIEJA */
+.tv-message-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000000;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  animation: tvScreenFadeIn 0.5s ease-out forwards;
+}
+
+@keyframes tvScreenFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.tv-screen-content {
+  max-width: 820px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.2rem;
+  position: relative;
+  z-index: 5;
+}
+
+.tv-scanlines {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.5) 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* TEXTO ILUMINADO EN FUENTE COURIER NEW CON FEELING OLD TV / GLITCH */
+.tv-glitch-text {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: clamp(1.4rem, 4.5vw, 2.5rem);
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: clamp(1px, 0.4vw, 3px);
+  line-height: 1.45;
+  text-shadow: 
+    0 0 6px #ffffff,
+    0 0 15px rgba(255, 255, 255, 0.9),
+    0 0 35px rgba(255, 255, 255, 0.65),
+    0 0 60px rgba(255, 255, 255, 0.35);
+  position: relative;
+  display: inline-block;
+  animation: tvFlickerJitter 0.1s infinite alternate;
+}
+
+@keyframes tvFlickerJitter {
+  0% {
+    opacity: 0.95;
+    transform: translate(0, 0);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-1px, 0.5px) skewX(0.3deg);
+  }
+  100% {
+    opacity: 0.92;
+    transform: translate(1px, -0.5px);
+  }
+}
+
+.tv-glitch-text::before,
+.tv-glitch-text::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.tv-glitch-text::before {
+  left: -2px;
+  text-shadow: 2px 0 rgba(255, 255, 255, 0.8);
+  animation: tvGlitch1 2s infinite linear alternate-reverse;
+}
+
+.tv-glitch-text::after {
+  left: 2px;
+  text-shadow: -2px 0 rgba(255, 255, 255, 0.8);
+  animation: tvGlitch2 2.5s infinite linear alternate-reverse;
+}
+
+@keyframes tvGlitch1 {
+  0%, 100% { clip-path: inset(0 0 0 0); }
+  25% { clip-path: inset(25% 0 50% 0); transform: translate(-3px, 0); }
+  50% { clip-path: inset(60% 0 15% 0); transform: translate(3px, 0); }
+  75% { clip-path: inset(35% 0 30% 0); transform: translate(-2px, 0); }
+}
+
+@keyframes tvGlitch2 {
+  0%, 100% { clip-path: inset(0 0 0 0); }
+  20% { clip-path: inset(10% 0 70% 0); transform: translate(2px, 0); }
+  60% { clip-path: inset(45% 0 25% 0); transform: translate(-3px, 0); }
+  85% { clip-path: inset(30% 0 45% 0); transform: translate(2px, 0); }
+}
+
+.tv-continue-prompt {
+  z-index: 10;
+  position: relative;
+}
+
+.tv-continue-prompt .btn-cryptic {
+  font-size: 0.95rem;
+  padding: 12px 24px;
+  border-width: 2px;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+}
+
+/* 7. PANEL DESBLOQUEADO Y BARRA DE TAREAS */
+.unlocked-dashboard {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  margin-top: 1rem;
+}
+
+.popup-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #000000;
+  border: 2px solid var(--border-color);
+  padding: 10px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
+}
+
+.toolbar-label {
+  font-size: 0.78rem;
+  font-weight: bold;
+  letter-spacing: 1.2px;
+}
+
+.toolbar-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Contenedor de ventanas */
+.windows-container {
+  position: relative;
+  width: 100%;
+  min-height: 550px;
+}
+
+/* 8. VENTANAS POPUP CRÍPTICAS (4 TERMINALES) */
+.cryptic-window {
+  width: 340px;
+  background-color: var(--surface-color);
+  border: 2px solid var(--border-color);
+  box-shadow: 6px 6px 0px rgba(255, 255, 255, 0.9), 0 20px 30px rgba(0, 0, 0, 0.95);
+  z-index: 50;
+  transition: opacity 0.2s;
+}
+
+@media (min-width: 769px) {
+  .cryptic-window {
+    position: absolute;
+    top: var(--desk-top, auto);
+    left: var(--desk-left, auto);
+    right: var(--desk-right, auto);
+  }
+}
+
+.cryptic-window.active-window {
+  z-index: 100;
+  border-color: #ffffff;
+  box-shadow: 8px 8px 0px #ffffff, 0 25px 40px rgba(0, 0, 0, 1);
+}
+
+.window-header {
+  background-color: var(--border-color);
+  color: #000000;
+  padding: 6px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  cursor: grab;
+  user-select: none;
+}
+
+.window-header:active {
+  cursor: grabbing;
+}
+
+.window-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.win-btn {
+  background: #000000;
+  color: #ffffff;
+  border: 1px solid #000000;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.win-btn:hover, .win-btn:active {
+  background: #ffffff;
+  color: #000000;
+  border-color: #000;
+}
+
+.win-btn.close:hover, .win-btn.close:active {
+  background: #000;
+  color: #fff;
+  text-decoration: underline;
+}
+
+.window-body {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: #050505;
+}
+
+/* ENLACE A GOOGLE MAPS DESDE EL CONTENIDO DEL POPUP */
+.map-target-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  position: relative;
+}
+
+.map-target-link:hover .window-image-container {
+  border-color: #ffffff;
+  border-style: solid;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.85);
+}
+
+.window-image-container {
+  width: 100%;
+  height: 185px;
+  background: #000000;
+  border: 1px dashed var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.terminal-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: grayscale(100%) contrast(160%);
+  display: block;
+}
+
+/* Etiqueta de mapa sobre la imagen */
+.map-link-badge {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: #ffffff;
+  border: 1px solid var(--border-color);
+  padding: 3px 8px;
+  font-size: 0.68rem;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+.map-target-link:hover .map-link-badge {
+  background: #ffffff;
+  color: #000000;
+  font-weight: bold;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
+}
+
+/* Placeholder */
+.placeholder-box {
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: repeating-linear-gradient(
+    45deg,
+    #000000,
+    #000000 10px,
+    #0e0e0e 10px,
+    #0e0e0e 20px
+  );
+  font-size: 0.72rem;
+  color: #ffffff;
+  line-height: 1.35;
+  white-space: pre-line;
+  border: 1px solid #333;
+}
+
+.placeholder-clover {
+  font-size: 2rem;
+  margin-bottom: 4px;
+}
+
+.window-footer-text {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px dotted #333;
+  padding-top: 6px;
+}
+
+.cursor-blink {
+  animation: blinkAnim 0.8s infinite;
+  font-weight: 900;
+}
+
+/* Estado Minimizado */
+.cryptic-window.minimized .window-body {
+  display: none;
+}
+
+/* VENTANA DE NOTA */
+.note-window {
+  width: 520px;
+  max-width: 95vw;
+  z-index: 150;
+  box-shadow: 8px 8px 0px #ffffff, 0 30px 50px rgba(0, 0, 0, 0.95);
+}
+
+.note-btn {
+  border-color: #ffffff;
+  color: #ffffff;
+  font-weight: bold;
+  background-color: #111111;
+}
+
+.note-btn:hover {
+  background-color: #ffffff;
+  color: #000000;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
+}
+
+.note-content-box {
+  padding: 1.4rem 1.2rem;
+  background-color: #050505;
+  border: 1px dashed rgba(255, 255, 255, 0.35);
+}
+
+.note-text {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: clamp(0.82rem, 2.5vw, 0.92rem);
+  line-height: 1.65;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  text-align: left;
+  white-space: normal;
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.4);
+}
+
+/* 9. PIE DE PÁGINA */
+.main-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 1px solid #333;
+  padding-top: 0.8rem;
+  margin-top: 1.5rem;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+/* 10. UTILIDADES Y ESTADOS */
+.hidden {
+  display: none !important;
+}
+
+body.unlocked .access-centerpiece {
+  transform: scale(0.95);
+  margin-bottom: 1.5rem;
+  opacity: 0.85;
+}
+
+body.unlocked .access-title {
+  font-size: clamp(1.6rem, 5vw, 2.2rem);
+  letter-spacing: clamp(3px, 1.5vw, 6px);
+}
+
+/* ==========================================================================
+   ADAPTABILIDAD MÓVIL Y TABLETS (RESPONSIVE)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .terminal-workspace {
+    padding: 0.75rem;
+  }
+
+  .main-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .header-left {
+    text-align: center;
+  }
+
+  .header-controls {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .audio-btn, .system-status {
+    flex: 1;
+    justify-content: center;
+    font-size: 0.72rem;
+    padding: 6px 8px;
+  }
+
+  .access-centerpiece {
+    padding: 1rem 0;
+  }
+
+  .frame-body {
+    padding: 1.5rem 0.9rem;
+  }
+
+  .input-wrapper {
+    flex-wrap: wrap;
+  }
+
+  #password-input {
+    width: 100%;
+    order: 1;
+    font-size: 1.05rem;
+  }
+
+  .prompt-arrow {
+    display: none;
+  }
+
+  #submit-btn {
+    width: 100%;
+    order: 2;
+    padding: 10px;
+    margin-top: 4px;
+    font-size: 0.9rem;
+  }
+
+  .toolbar-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .toolbar-buttons .btn-cryptic {
+    font-size: 0.75rem;
+    padding: 8px 6px;
+  }
+
+  .windows-container {
+    min-height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .cryptic-window {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: 4px 4px 0px rgba(255, 255, 255, 0.9);
+  }
+
+  .window-header {
+    cursor: default;
+    padding: 8px 10px;
+  }
+
+  .win-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
+  }
+
+  .window-image-container {
+    height: 190px;
+  }
+
+  .main-footer {
+    flex-direction: column;
+    text-align: center;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-controls {
+    flex-direction: column;
+  }
+
+  .audio-btn, .system-status {
+    width: 100%;
+  }
+
+  .toolbar-buttons {
+    grid-template-columns: 1fr;
+  }
+}

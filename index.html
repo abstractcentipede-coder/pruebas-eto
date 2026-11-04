@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>TERMINAL, LAS 3 PRUEBAS DE ETO</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="locked">
+
+  <!-- OVERLAY CRT / SCANLINES (Efecto retro monitor) -->
+  <div class="crt-overlay"></div>
+  <div class="vignette"></div>
+
+  <!-- FONDO: Animación ASCII / 8-Bit de Tréboles en bucle vertical -->
+  <canvas id="clover-canvas"></canvas>
+  <div id="custom-bg" class="custom-bg-layer hidden"></div>
+
+  <!-- ELEMENTO DE AUDIO EN BUCLE (LOOP) -->
+  <!-- Coloca tu canción en assets/musica.mp3 -->
+  <audio id="bg-music" loop preload="auto">
+    <source src="assets/musica.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- PANTALLA COMPLETA CRT SHUTDOWN & MENSAJE DE TV VIEJA ILUMINADA -->
+  <div id="tv-message-screen" class="tv-message-screen hidden">
+    <div class="tv-screen-content">
+      <div class="tv-scanlines"></div>
+      <p class="tv-glitch-text" data-text="Esta es la ultima pista, gracias por jugar, y les espero para festejar!">
+        Esta es la ultima pista, gracias por jugar, y les espero para festejar!
+      </p>
+      <div class="tv-continue-prompt">
+        <button type="button" id="tv-continue-btn" class="btn-cryptic">[ CONTINUAR AL MAPA Y SUBSISTEMAS ]</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="terminal-workspace" id="main-workspace">
+
+    <!-- ENCABEZADO -->
+    <header class="main-header">
+      <div class="header-left">
+        <span class="system-tag">LAS 3 PRUEBAS DE ETO // 2026</span>
+      </div>
+
+      <!-- CONTROLES SUPERIORES (AUDIO Y ESTADO) -->
+      <div class="header-controls">
+        <!-- BOTÓN DE MÚSICA / AUDIO EN LOOP -->
+        <button type="button" id="audio-toggle-btn" class="btn-cryptic audio-btn" title="Activar / Silenciar Música en Bucle">
+          <span class="audio-icon">♫</span> [ AUDIO: <span id="audio-status">OFF</span> ]
+        </button>
+
+        <!-- ESTADO DE LA APLICACIÓN -->
+        <div class="system-status">
+          <span class="status-indicator blink">●</span> ESTADO: <span id="status-text">CUMPLEAÑOS ACTIVO</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- BLOQUE CENTRAL DE ACCESO / LOGIN -->
+    <main class="access-centerpiece" id="access-box">
+      <div class="terminal-frame">
+        <div class="frame-bar">
+          <span class="frame-dot"></span>
+          <span class="frame-title">TERMINAL_ROOT // AUTH_REQ</span>
+          <span class="frame-code">[0x7F]</span>
+        </div>
+        <div class="frame-body">
+          <h1 class="access-title">ACCESO</h1>
+          <p class="access-instruction">INGRESE PALABRA CLAVE PARA DESENCRIPTAR EL ENTORNO:</p>
+          
+          <form id="access-form" autocomplete="off" onsubmit="return false;">
+            <div class="input-wrapper">
+              <span class="prompt-arrow">&gt;&gt;</span>
+              <input 
+                type="password" 
+                id="password-input" 
+                placeholder="CLAVE_DE_ACCESO" 
+                spellcheck="false" 
+                autofocus 
+                required 
+              />
+              <button type="submit" id="submit-btn" class="btn-cryptic">[ ENTRAR ]</button>
+            </div>
+            
+            <!-- Toggle para ver la contraseña -->
+            <div class="input-helper">
+              <button type="button" id="toggle-pwd-btn" class="btn-text">[ MOSTRAR CARACTERES ]</button>
+            </div>
+
+            <!-- LOGO: CENTRADO EN LA PARTE INFERIOR DEL CUADRO DE CONTRASEÑA -->
+            <div class="terminal-box-logo-container">
+              <img id="main-logo" src="assets/logo.png" alt="Logotipo Críptico" onerror="this.style.display='none';">
+            </div>
+          </form>
+
+          <!-- Mensaje de error/éxito -->
+          <div id="feedback-message" class="feedback-message" aria-live="polite"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- PANEL DESBLOQUEADO (Se revela tras el mensaje final) -->
+    <div id="unlocked-dashboard" class="unlocked-dashboard hidden">
+      <!-- BARRA SUPERIOR DE CONTROL DE POPUPS -->
+      <nav class="popup-toolbar">
+        <div class="toolbar-label">CLICK EN CUALQUIERA PARA UBICAR LA ULTIMA CAJA</div>
+        <div class="toolbar-buttons">
+          <button type="button" class="btn-cryptic" onclick="toggleWindow('win-1')">[ + VENTANA 1 ]</button>
+          <button type="button" class="btn-cryptic" onclick="toggleWindow('win-2')">[ + VENTANA 2 ]</button>
+          <button type="button" class="btn-cryptic" onclick="toggleWindow('win-3')">[ + VENTANA 3 ]</button>
+          <button type="button" class="btn-cryptic" onclick="toggleWindow('win-4')">[ + VENTANA 4 ]</button>
+          <button type="button" class="btn-cryptic alt" onclick="openAllWindows()">[ ABRIR TODAS ]</button>
+          <button type="button" class="btn-cryptic alt" onclick="closeAllWindows()">[ CERRAR TODAS ]</button>
+          <button type="button" class="btn-cryptic danger" onclick="lockSystem()">[ BLOQUEAR SISTEMA ]</button>
+          <button type="button" class="btn-cryptic note-btn" onclick="toggleWindow('win-note')">[ NOTA ]</button>
+        </div>
+      </nav>
+
+      <!-- CONTENEDOR DE LAS 4 VENTANAS / TERMINALES POPUPS -->
+      <div class="windows-container">
+        <!-- POPUP 1 -->
+        <div class="cryptic-window" id="win-1" style="--desk-top: 140px; --desk-left: 5%;">
+          <div class="window-header">
+            <span class="window-title">TERMINAL_01</span>
+            <div class="window-actions">
+              <button type="button" class="win-btn" onclick="minimizeWindow('win-1')" title="Minimizar">_</button>
+              <button type="button" class="win-btn close" onclick="closeWindow('win-1')" title="Cerrar">X</button>
+            </div>
+          </div>
+          <div class="window-body">
+            <!-- ENLACE A GOOGLE MAPS -->
+            <a href="https://maps.app.goo.gl/9v25sD8RVtn19TL89" target="_blank" rel="noopener noreferrer" class="map-target-link" title="Haz clic para abrir Google Maps">
+              <div class="window-image-container">
+                <img class="terminal-img" src="assets/popup1.png" alt="Artefacto 1" onerror="showPlaceholder(this, '01 // PROTOCOLO_ALPHA\n[♣ TRÉBOL LOCALIZADO ♣]\nClick para abrir Google Maps')">
+                <div class="map-link-badge">📍 CLICK PARA ABRIR MAPA</div>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- POPUP 2 -->
+        <div class="cryptic-window" id="win-2" style="--desk-top: 170px; --desk-right: 5%;">
+          <div class="window-header">
+            <span class="window-title">TERMINAL_02</span>
+            <div class="window-actions">
+              <button type="button" class="win-btn" onclick="minimizeWindow('win-2')" title="Minimizar">_</button>
+              <button type="button" class="win-btn close" onclick="closeWindow('win-2')" title="Cerrar">X</button>
+            </div>
+          </div>
+          <div class="window-body">
+            <!-- ENLACE A GOOGLE MAPS -->
+            <a href="https://maps.app.goo.gl/9v25sD8RVtn19TL89" target="_blank" rel="noopener noreferrer" class="map-target-link" title="Haz clic para abrir Google Maps">
+              <div class="window-image-container">
+                <img class="terminal-img" src="assets/popup2.png" alt="Artefacto 2" onerror="showPlaceholder(this, '02 // ARCHIVO_CRÍPTICO\n0x43 0x49 0x50 0x48\nClick para abrir Google Maps')">
+                <div class="map-link-badge">📍 CLICK PARA ABRIR MAPA</div>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- POPUP 3 -->
+        <div class="cryptic-window" id="win-3" style="--desk-top: 480px; --desk-left: 10%;">
+          <div class="window-header">
+            <span class="window-title">TERMINAL_03</span>
+            <div class="window-actions">
+              <button type="button" class="win-btn" onclick="minimizeWindow('win-3')" title="Minimizar">_</button>
+              <button type="button" class="win-btn close" onclick="closeWindow('win-3')" title="Cerrar">X</button>
+            </div>
+          </div>
+          <div class="window-body">
+            <!-- ENLACE A GOOGLE MAPS -->
+            <a href="https://maps.app.goo.gl/9v25sD8RVtn19TL89" target="_blank" rel="noopener noreferrer" class="map-target-link" title="Haz clic para abrir Google Maps">
+              <div class="window-image-container">
+                <img class="terminal-img" src="assets/popup3.png" alt="Artefacto 3" onerror="showPlaceholder(this, '03 // MATRIZ_NODAL\nSISTEMA ACTIVO\nClick para abrir Google Maps')">
+                <div class="map-link-badge">📍 CLICK PARA ABRIR MAPA</div>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- POPUP 4 -->
+        <div class="cryptic-window" id="win-4" style="--desk-top: 500px; --desk-right: 12%;">
+          <div class="window-header">
+            <span class="window-title">TERMINAL_04</span>
+            <div class="window-actions">
+              <button type="button" class="win-btn" onclick="minimizeWindow('win-4')" title="Minimizar">_</button>
+              <button type="button" class="win-btn close" onclick="closeWindow('win-4')" title="Cerrar">X</button>
+            </div>
+          </div>
+          <div class="window-body">
+            <!-- ENLACE A GOOGLE MAPS -->
+            <a href="https://maps.app.goo.gl/9v25sD8RVtn19TL89" target="_blank" rel="noopener noreferrer" class="map-target-link" title="Haz clic para abrir Google Maps">
+              <div class="window-image-container">
+                <img class="terminal-img" src="assets/popup4.png" alt="Artefacto 4" onerror="showPlaceholder(this, '04 // SUBSISTEMA_FINAL\n[♣ UBICACIÓN CONFIRMADA ♣]\nClick para abrir Google Maps')">
+                <div class="map-link-badge">📍 CLICK PARA ABRIR MAPA</div>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- POPUP NOTA -->
+        <div class="cryptic-window note-window hidden" id="win-note" style="--desk-top: 240px; --desk-left: 22%;">
+          <div class="window-header">
+            <span class="window-title">NOTA</span>
+            <div class="window-actions">
+              <button type="button" class="win-btn" onclick="minimizeWindow('win-note')" title="Minimizar">_</button>
+              <button type="button" class="win-btn close" onclick="closeWindow('win-note')" title="Cerrar">X</button>
+            </div>
+          </div>
+          <div class="window-body">
+            <div class="note-content-box">
+              <p class="note-text">
+                "Esta es la primera vez que celebro mi cumpleaños, gracias por jugar y persistir hasta este punto. Espero que este mensaje llegue para todos los invitados, y que una buena noche nos aguarde a todos para disfrutar. Cada uno de los invitados fue elegido meticulosamente y por razones especificas, cada uno formando un papel esencial en estos increibles años, y estoy en agradecimiento con ustedes, traed vuestros mejores preparativos, alcohol, comida, u otras cosas. Y disfrutemos en comunidad"
+              </p>
+            </div>
+          </div>
+        </div>
+      </div><!-- /windows-container -->
+
+    </div><!-- /unlocked-dashboard -->
+
+    <!-- PIE DE PÁGINA CRÍPTICO -->
+    <footer class="main-footer">
+      <div>[ ENCRIPTACIÓN: ACTIVA ]</div>
+      <div id="footer-ticker">CLAVE_REQUERIDA // NINGÚN TREBOL DEBE SALIR DE SU SITIO</div>
+      <div id="clock-display">00:00:00 UTC</div>
+    </footer>
+
+  </div><!-- /terminal-workspace -->
+
+  <script src="script.js"></script>
+</body>
+</html>
